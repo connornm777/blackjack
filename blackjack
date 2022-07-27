@@ -215,7 +215,7 @@ def basic_strategy(player, dealer, split):
 			dtot = 11
 
 	if split and len(player.cards) == 2 :
-		if (player.cards[0].value==player.cards[1].value or tot == 20) :
+		if (player.cards[0].value==player.cards[1].value or (tot == 20 and not soft)) :
 			pcard = player.cards[0].value
 			if pcard == 'a' or pcard == '8':
 				return 'split'
@@ -264,7 +264,7 @@ def basic_strategy(player, dealer, split):
 				else:
 					return 'hit'
 		elif tot == 9:
-			if dtot > 6:
+			if dtot > 6 or dtot ==2:
 				return 'hit'
 			elif dtot > 2:
 				if len(player.cards)==2:
@@ -318,21 +318,24 @@ def gameloop():
 
 	d = deck(shoe_size)
 	my_hands = [hand()]
+	rounds = 0
 	dealer = hand()
 	crashed = False	
 	showbs = False
 	newround = True
 	roundover = False
 	deck_min_lim = int(52*penetration)
-	showcount = False
+	showcount = True
 	count = 0
 	bet = 100
 	bankroll = bankrollstart
+	godmode = False
 	
 	while not crashed:
 
 
 		if newround:
+			rounds += 1
 			count += hilo(dealer.cards)
 			d.collect(dealer)
 			for h in my_hands:
@@ -350,14 +353,26 @@ def gameloop():
 			showbs = False
 			split_level=0
 			bankroll -= bet
+			win = 0
 			pots = [bet]
 
 		for event in pygame.event.get():
+
 			if event.type == pygame.QUIT:
 				crashed = True
-				print("Score :"+str(bankroll-bankrollstart))
-			
-			if event.type == pygame.KEYDOWN:
+				profit = bankroll - bankrollstart
+				print("Profit :"+str(profit))
+				print("Hands :"+str(rounds))
+				print("Profit/Hand :"+str(int(profit/rounds)))
+			if event.type == pygame.KEYUP:
+				if event.key == pygame.K_p:
+					godmode = False
+	
+			if event.type == pygame.KEYDOWN or godmode:	
+				if godmode:
+					event.key = pygame.K_b
+				if event.key == pygame.K_p:
+					godmode = True
 				if event.key == pygame.K_c:
 					if showcount:
 						showcount = False
@@ -366,10 +381,30 @@ def gameloop():
 				if event.key == pygame.K_b:
 					if showbs:
 						showbs = False
+						if godmode:
+							if roundover:
+								event.key = pygame.K_SPACE	
+							else:
+								if action == 'hit':
+									event.key = pygame.K_a
+								elif action == 'stand':
+									event.key = pygame.K_s
+								elif action == 'double':
+									event.key = pygame.K_d
+								elif action == 'split':
+									event.key = pygame.K_f
 					else:
 						showbs = True	
-						action = basic_strategy(my_hands[split_level], dealer, (len(my_hands) < 4))
+						if roundover:
+							action = 'next'
+						else:
+							action = basic_strategy(my_hands[split_level], dealer, (len(my_hands) < 4))
 				if roundover:
+					if godmode:
+						if int(count*52/len(d.cards)) < 2:
+							bet = 100
+						else:
+							bet = 100*(int(count*52/len(d.cards))**2)
 					if event.key == pygame.K_UP:
 						bet += 10
 					if event.key == pygame.K_DOWN:
@@ -383,9 +418,7 @@ def gameloop():
 						roundover = False	
 						bankroll += win
 				else:
-					if event.key == pygame.K_w:	
-						my_hands[split_level].deal(dealer, 1)
-						showbs = False
+						
 					if event.key == pygame.K_a:
 						showbs = False
 						my_hands[split_level].deal(d, 1)
@@ -461,7 +494,7 @@ def gameloop():
 			write("True count :"+str(int(count*52/len(d.cards))), 0, 250)
 
 		if showbs:
-			write(action, 0, 300)
+			write("Basic strategy: "+action, 0, 300)
 
 		pygame.mouse.set_visible(True)
 		pygame.display.update()
