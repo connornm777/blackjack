@@ -7,7 +7,7 @@ penetration = 1.5
 shoe_size = 6
 card_back = 'reg'
 global bankrollstart 
-bankrollstart = 10000
+bankrollstart = 2000
 
 #######################################################################
 
@@ -327,7 +327,7 @@ def gameloop():
 	deck_min_lim = int(52*penetration)
 	showcount = True
 	count = 0
-	bet = 100
+	bet = 20
 	bankroll = bankrollstart
 	godmode = False
 	
@@ -337,6 +337,14 @@ def gameloop():
 		if newround:
 			rounds += 1
 			count += hilo(dealer.cards)
+			truecount = int(count*52/len(d.cards))
+			if godmode:
+				if truecount < 2:
+					bet = 20
+				elif truecount < 10:
+					bet = 20*truecount
+				else:
+					bet = 200
 			d.collect(dealer)
 			for h in my_hands:
 				count += hilo(h.cards)
@@ -345,6 +353,7 @@ def gameloop():
 			if len(d.cards) < deck_min_lim:
 				d.reshuffle() 	
 				count = 0
+				truecount = 0
 			my_hands[0].deal(d, 2)
 			dealer.deal(d, 2)
 			dealer.cards[0].flip()
@@ -400,11 +409,6 @@ def gameloop():
 						else:
 							action = basic_strategy(my_hands[split_level], dealer, (len(my_hands) < 4))
 				if roundover:
-					if godmode:
-						if int(count*52/len(d.cards)) < 2:
-							bet = 100
-						else:
-							bet = 100*(int(count*52/len(d.cards))**2)
 					if event.key == pygame.K_UP:
 						bet += 10
 					if event.key == pygame.K_DOWN:
@@ -491,7 +495,7 @@ def gameloop():
 			write("Pot: $"+str(sum(pots)), 0, 150)
 		if showcount:
 			write("Running count :"+str(count), 0, 200)
-			write("True count :"+str(int(count*52/len(d.cards))), 0, 250)
+			write("True count :"+str(truecount), 0, 250)
 
 		if showbs:
 			write("Basic strategy: "+action, 0, 300)
