@@ -316,11 +316,8 @@ def basic_strategy(player, dealer, split):
 
 def gameloop():
 
-	bankroll_list = []
-	count_list = []
 	d = deck(shoe_size)
 	my_hands = [hand()]
-	my_offset = 0
 	dealer = hand()
 	crashed = False	
 	showbs = False
@@ -336,8 +333,6 @@ def gameloop():
 
 
 		if newround:
-			bankroll_list += [bankroll]
-			count_list += [int(count*52/len(d.cards))]	
 			count += hilo(dealer.cards)
 			d.collect(dealer)
 			for h in my_hands:
@@ -347,12 +342,10 @@ def gameloop():
 			if len(d.cards) < deck_min_lim:
 				d.reshuffle() 	
 				count = 0
-			my_hands[0].deal(d, 1)
-			my_hands[0].pick(d, str(my_hands[0].cards[0].value))
+			my_hands[0].deal(d, 2)
 			dealer.deal(d, 2)
 			dealer.cards[0].flip()
 			tookearnings = False
-			bust = False
 			newround = False
 			showbs = False
 			split_level=0
@@ -362,25 +355,7 @@ def gameloop():
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				crashed = True
-				f = open('data/rawscore', 'r+')
-				f.seek(0)
-				try:
-					score = int(f.read())
-				except:
-					score = 0
-				score = bankroll - bankrollstart
-				f.seek(0)
-				f.write(str(score))
-				f.truncate()
-				f.close()
-				f = open('data/scores', 'r+')
-				fstr = f.read()
-				dt = datetime.now()
-				tstr = dt.strftime("%d/%m/%Y   %H:%M")
-				fstr+=(tstr + " :  $" + str(bankroll-bankrollstart))
-				f.seek(0)
-				f.write(fstr)
-				f.close()
+				print("Score :"+str(bankroll-bankrollstart))
 			
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_c:
@@ -416,7 +391,6 @@ def gameloop():
 						my_hands[split_level].deal(d, 1)
 						if my_hands[split_level].total()[0] > 21:
 							roundover = True
-							bust = True
 							if split_level == 0:
 								dealer_plays(dealer, d)
 					if event.key == pygame.K_s:
@@ -434,8 +408,6 @@ def gameloop():
 							if my_hands[split_level].total()[0] < 22 :
 								if split_level == 0:
 									dealer_plays(dealer, d)
-							else: 
-								bust = True
 					if event.key == pygame.K_f:
 						showbs = False
 						write(str(my_hands[split_level].cards[0].value), 0, 300)
@@ -477,9 +449,6 @@ def gameloop():
 		for n in range(len(my_hands)):
 			my_hands[n].show(n*300, 500)
 			my_hands[n].show_total(n*300+50, 400)
-
-#		my_hands[split_level].show_total(split_level*300+50, 400)
-
 		dealer.show(400, 0)	
 		if roundover:	
 			dealer.show_total(500, 350)
