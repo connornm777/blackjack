@@ -1,48 +1,27 @@
 #!/usr/bin/env python3
-import pygame, random, copy, pdb
+import random, copy, pdb
 import numpy as np
 from datetime import datetime
+import matplotlib.pyplot as plt
 
-penetration = 1
+rounds = 100000
+penetration = 1.5
 shoe_size = 6
 card_back = 'reg'
 global bankrollstart 
-bankrollstart = 2000
+bankrollstart = 0
 
 #######################################################################
 
-pygame.init()
-back_fill = (255, 230, 255)
-green = (100, 200, 100)
-red = (255, 200, 200)
-black = (0, 0, 0)
-white = (255, 255, 255)
-display_height = 800
-display_width = 1400
 
-
-pygame.font.init()
-my_font = pygame.font.SysFont('suruma', 50)
-
-gameDisplay = pygame.display.set_mode((display_width, display_height))
-pygame.display.set_caption('#YOLO')
-clock = pygame.time.Clock()
-# pygame.mouse.get_pos()
 
 card_images = {}
 suits = {'h', 'c', 'd', 's'}
 values = {'a', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'j', 'q', 'k'}
 
-for suit in suits:
-	for value in values:
-		card_images[(value, suit)]=pygame.image.load('pics/'+suit+value+'.png')
-
-back_image = pygame.image.load('pics/backs/'+card_back+'.png')
 
 
-def write(s, x, y, color=(0,0,0)):
-	pygfile = my_font.render(s, False, color)
-	gameDisplay.blit(pygfile, (x,y))	
+
 
 
 class card:
@@ -51,11 +30,6 @@ class card:
 		self.suit = suit
 		self.faceup = faceup
 
-	def show(self, x, y):
-		if self.faceup == True:
-			gameDisplay.blit(card_images[(self.value, self.suit)], (x, y))	
-		else:
-			gameDisplay.blit(back_image, (x, y))
 
 	def flip(self):
 		if self.faceup == True:
@@ -102,22 +76,6 @@ class hand:
 			c.flip()
 
 
-	def show(self, x, y):
-		offset = 0
-		for c in self.cards:
-			c.show(x+offset, y)
-			offset += 50
-
-	def show_total(self, x, y):
-		tot, s = self.total()
-		if s:
-			disp = my_font.render(str(tot-10)+'/'+str(tot), False, black)
-		else:
-			disp = my_font.render(str(tot), False, black)
-		gameDisplay.blit(disp, (x,y))
-	
-
-
 	def pick(self, deck, value):
 		for i in range(len(deck.cards)):
 			if deck.cards[i].value == value:
@@ -149,27 +107,6 @@ class hand:
 		return s, soft
 
 
-def write_menu():
-	x, y, off = 800, 0, 50
-	write('a: Hit', x, y)
-	y+=off
-	write('s: Stand', x, y)
-	y+=off
-	write('d: Double Down', x, y)
-	y+=off
-	write('f: Split', x, y)
-	y+=off
-#	write('g: Surrender', x, y)
-#	y+=off
-	write('b: Show Basic Strategy', x, y)
-	y+=off
-	write('c: Show Count', x, y)
-	y+=off
-	write('Arrows: Change Bet', x, y)
-	y+=off
-	write('SPACE: New Round', x, y)
-	y+=off
-	write('p: Perfect Play', x, y)
 
 def dealer_plays(dealer, d):
 	dealer.cards[0].flip()
@@ -315,14 +252,14 @@ def basic_strategy(player, dealer, split):
 	return 'error'
 	
 
-def gameloop():
+def loop():
 
+	bankroll_list = []
+	truecount_list = []
 	d = deck(shoe_size)
 	my_hands = [hand()]
-	rounds = 0
 	dealer = hand()
 	crashed = False	
-	showbs = False
 	newround = True
 	roundover = False
 	deck_min_lim = int(52*penetration)
@@ -330,22 +267,19 @@ def gameloop():
 	count = 0
 	bet = 20
 	bankroll = bankrollstart
-	godmode = False
 	
-	while not crashed:
 
+	for n in range(rounds):
 
 		if newround:
-			rounds += 1
 			count += hilo(dealer.cards)
 			truecount = int(count*52/len(d.cards))
-			if godmode:
-				if truecount < 2:
-					bet = 20
-				elif truecount < 4:
-					bet = 20*(truecount**2)
-				else:
-					bet = 200
+			if truecount < 2:
+				bet = 20
+			elif truecount < 4:
+				bet = 20*(truecount**2)
+			else:
+				bet = 200
 			d.collect(dealer)
 			for h in my_hands:
 				count += hilo(h.cards)
@@ -360,113 +294,60 @@ def gameloop():
 			dealer.cards[0].flip()
 			tookearnings = False
 			newround = False
-			showbs = False
 			split_level=0
 			bankroll -= bet
 			win = 0
 			pots = [bet]
+			truecount_list += [truecount]
+			bankroll_list += [bankroll]
 
-		for event in pygame.event.get():
 
-			if event.type == pygame.QUIT:
-				crashed = True
-				profit = bankroll - bankrollstart
-				print("Profit :"+str(profit))
-				print("Hands :"+str(rounds))
-				print("Profit/Hand :"+str(int(100*profit/rounds)/100.0))
-			if event.type == pygame.KEYUP:
-				if event.key == pygame.K_p:
-					godmode = False
-	
-			if event.type == pygame.KEYDOWN or godmode:	
-				if godmode:
-					event.key = pygame.K_b
-				if event.key == pygame.K_p:
-					godmode = True
-				if event.key == pygame.K_c:
-					if showcount:
-						showcount = False
-					else:
-						showcount = True
-				if event.key == pygame.K_b:
-					if showbs:
-						showbs = False
-						if godmode:
-							if roundover:
-								event.key = pygame.K_SPACE	
-							else:
-								if action == 'hit':
-									event.key = pygame.K_a
-								elif action == 'stand':
-									event.key = pygame.K_s
-								elif action == 'double':
-									event.key = pygame.K_d
-								elif action == 'split':
-									event.key = pygame.K_f
-					else:
-						showbs = True	
-						if roundover:
-							action = 'next'
-						else:
-							action = basic_strategy(my_hands[split_level], dealer, (len(my_hands) < 4))
-				if roundover:
-					if event.key == pygame.K_UP:
-						bet += 10
-					if event.key == pygame.K_DOWN:
-						bet -= 10
-					if event.key == pygame.K_RIGHT:
-						bet += 100
-					if event.key == pygame.K_LEFT:
-						bet -= 100
-					if event.key == pygame.K_SPACE:
-						newround = True
-						roundover = False	
-						bankroll += win
-				else:
-						
-					if event.key == pygame.K_a:
-						showbs = False
-						my_hands[split_level].deal(d, 1)
-						if my_hands[split_level].total()[0] > 21:
-							roundover = True
-							if split_level == 0:
-								dealer_plays(dealer, d)
-					if event.key == pygame.K_s:
-						roundover = True
-						showbs = False
-						if split_level == 0:	
+			
+		if roundover:
+			action = 'next'
+			bankroll += win
+			roundover = False
+			newround = True
+		else:
+			action = basic_strategy(my_hands[split_level], dealer, (len(my_hands)<4))
+				
+			if action == 'hit':
+				my_hands[split_level].deal(d, 1)
+				if my_hands[split_level].total()[0] > 21:
+					roundover = True
+					if split_level == 0:
+						dealer_plays(dealer, d)
+			elif action == 'stand':
+				roundover = True
+				if split_level == 0:	
+					dealer_plays(dealer, d)
+			elif action == 'double':
+				if (len(my_hands[split_level].cards) == 2):
+					bankroll -= bet
+					pots[split_level] += bet
+					my_hands[split_level].deal(d, 1)
+					roundover = True
+					if my_hands[split_level].total()[0] < 22 :
+						if split_level == 0:
 							dealer_plays(dealer, d)
-					if event.key == pygame.K_d:
-						showbs = False
-						if (len(my_hands[split_level].cards) == 2):
-							bankroll -= bet
-							pots[split_level] += bet
-							my_hands[split_level].deal(d, 1)
-							roundover = True
-							if my_hands[split_level].total()[0] < 22 :
-								if split_level == 0:
-									dealer_plays(dealer, d)
-					if event.key == pygame.K_f:
-						showbs = False
-						write(str(my_hands[split_level].cards[0].value), 0, 300)
-						tens = {'10', 'j', 'q', 'k'}
-						tenpair = False
-						if (my_hands[split_level].cards[0].value in tens and my_hands[split_level].cards[1].value in tens):
-							tenpair = True
-						if (my_hands[split_level].cards[0].value == my_hands[split_level].cards[1].value or tenpair):
-							if ((len(my_hands[split_level].cards)==2) and len(my_hands) < 4):	
-								split_level += 1
-								bankroll -= bet
-								pots += [bet]
-								my_hands.insert(split_level, copy.deepcopy(my_hands[split_level-1]))
-								my_hands[split_level].cards.pop(0)
-								my_hands[split_level-1].cards.pop(1)
-								my_hands[split_level-1].deal(d, 1)	
-								my_hands[split_level].deal(d, 1)
+			elif action == 'split':
+				tens = {'10', 'j', 'q', 'k'}
+				tenpair = False
+				if (my_hands[split_level].cards[0].value in tens and my_hands[split_level].cards[1].value in tens):
+					tenpair = True
+				if (my_hands[split_level].cards[0].value == my_hands[split_level].cards[1].value or tenpair):
+					if ((len(my_hands[split_level].cards)==2) and len(my_hands) < 4):	
+						split_level += 1
+						bankroll -= bet
+						pots += [bet]
+						my_hands.insert(split_level, copy.deepcopy(my_hands[split_level-1]))
+						my_hands[split_level].cards.pop(0)
+						my_hands[split_level-1].cards.pop(1)
+						my_hands[split_level-1].deal(d, 1)	
+						my_hands[split_level].deal(d, 1)
 
 
 		if roundover and not tookearnings:
-			showbs = False		
 			if split_level > 0:	
 				roundover = False
 				tookearnings = False	
@@ -475,36 +356,12 @@ def gameloop():
 				tookearnings = True
 				win = winnings(dealer, my_hands, pots)
 			
-				
-
-		gameDisplay.fill(white)	
-		write_menu()
-		write("Cards Left: "+str(len(d.cards)), 0, 0)
-		write("Bankroll: $"+str(bankroll), 0, 50)
-		write("Bet: $"+str(bet), 0, 100)
 
 
-		for n in range(len(my_hands)):
-			my_hands[n].show(n*300, 500)
-			my_hands[n].show_total(n*300+50, 400)
-		dealer.show(400, 0)	
-		if roundover:	
-			dealer.show_total(500, 350)
-			write("Pot: $"+str(win), 0, 150)
-		else:	
-			write("V", split_level*300+50, 450, color=green)
-			write("Pot: $"+str(sum(pots)), 0, 150)
-		if showcount:
-			write("Running Count :"+str(count), 0, 200)
-			write("True Count :"+str(truecount), 0, 250)
+	plt.plot(bankroll_list)
+	plt.show()
+	print(bankroll/len(bankroll_list))
 
-		if showbs:
-			write("BS Play: "+action, 0, 300)
 
-		pygame.mouse.set_visible(True)
-		pygame.display.update()
-		clock.tick(60)
-
-gameloop()
-pygame.quit()
+loop()
 quit()
