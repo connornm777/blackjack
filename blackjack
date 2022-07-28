@@ -184,12 +184,11 @@ def winnings(dealer, hands, pots):
 	winnings = 0
 
 	for i in range(len(hands)):
-		pltot = hands[i].total()[0]		
-	
-		if len(hands[i].cards)==2 and pltot==21:
-			winnings += int(5*pots[i]/2)
-		elif pltot == detot:
+		pltot = hands[i].total()[0]			
+		if pltot == detot:
 			winnings += pots[i]
+		elif len(hands[i].cards)==2 and pltot==21:
+			winnings += int(5*pots[i]/2)
 		elif pltot < 22 and (pltot > detot or detot > 21):
 			winnings += 2*pots[i]
 	return winnings
@@ -365,6 +364,8 @@ def gameloop():
 			bankroll -= bet
 			win = 0
 			pots = [bet]
+			if dealer.total()[0] == 21
+				roundover = True
 
 		for event in pygame.event.get():
 

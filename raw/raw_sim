@@ -13,15 +13,12 @@ bankrollstart = 0
 
 #######################################################################
 
-
-
 card_images = {}
 suits = {'h', 'c', 'd', 's'}
 values = {'a', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'j', 'q', 'k'}
 
-
-
-
+def bet_strat(tc):
+	return 20
 
 
 class card:
@@ -36,7 +33,6 @@ class card:
 			self.faceup = False
 		else:
 			self.faceup = True
-
 
 
 class deck:
@@ -119,14 +115,12 @@ def dealer_plays(dealer, d):
 def winnings(dealer, hands, pots):
 	detot=dealer.total()[0] 
 	winnings = 0
-
 	for i in range(len(hands)):
 		pltot = hands[i].total()[0]		
-	
-		if len(hands[i].cards)==2 and pltot==21:
-			winnings += int(5*pots[i]/2)
-		elif pltot == detot:
+		if pltot == detot:
 			winnings += pots[i]
+		elif len(hands[i].cards)==2 and pltot==21:
+			winnings += int(5*pots[i]/2)
 		elif pltot < 22 and (pltot > detot or detot > 21):
 			winnings += 2*pots[i]
 	return winnings
@@ -250,6 +244,8 @@ def basic_strategy(player, dealer, split):
 				else:
 					return 'hit'
 	return 'error'
+
+
 	
 
 def loop():
@@ -266,20 +262,17 @@ def loop():
 	showcount = True
 	count = 0
 	bet = 20
+	n=0
 	bankroll = bankrollstart
 	
 
-	for n in range(rounds):
+	while(n < rounds):
 
 		if newround:
+			n+=1
 			count += hilo(dealer.cards)
 			truecount = int(count*52/len(d.cards))
-			if truecount < 2:
-				bet = 20
-			elif truecount < 4:
-				bet = 20*(truecount**2)
-			else:
-				bet = 200
+			bet = bet_strat(truecount)
 			d.collect(dealer)
 			for h in my_hands:
 				count += hilo(h.cards)
@@ -300,8 +293,9 @@ def loop():
 			pots = [bet]
 			truecount_list += [truecount]
 			bankroll_list += [bankroll]
-
-
+			if dealer.total()[0] == 21:
+				roundover = True
+			
 			
 		if roundover:
 			action = 'next'
@@ -357,11 +351,17 @@ def loop():
 				win = winnings(dealer, my_hands, pots)
 			
 
-
-	plt.plot(bankroll_list)
-	plt.show()
-	print(bankroll/len(bankroll_list))
+	
+	return bankroll_list, truecount_list
 
 
-loop()
+bl, tl = loop()
+
+#dbl = [bl[i+1]-bl[i] for i in range(len(bl)-1)]
+#tl.pop()
+
+plt.plot(bl)
+plt.show()
+
+
 quit()
