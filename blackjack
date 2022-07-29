@@ -364,7 +364,8 @@ def gameloop():
 			bankroll -= bet
 			win = 0
 			pots = [bet]
-			if dealer.total()[0] == 21
+			if dealer.total()[0] == 21:
+				dealer.cards[0].flip()
 				roundover = True
 
 		for event in pygame.event.get():

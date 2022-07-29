@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-rounds = 100000
+rounds = 500000
 penetration = 1.5
 shoe_size = 6
 card_back = 'reg'
@@ -18,15 +18,13 @@ suits = {'h', 'c', 'd', 's'}
 values = {'a', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'j', 'q', 'k'}
 
 def bet_strat(tc):
-#	return 20
-	if tc < -2:
-		return 0
-	elif tc < 2:
-		return 20
+#	return 100
+	if tc < 2:
+		return 10
 	elif tc < 5:
-		return 20*(tc**2) 
+		return 10*(tc**2)
 	else:
-		return 400
+		return 500
 
 
 class card:
